@@ -1,0 +1,25 @@
+{
+  "url": "https://kontur.ru/market",
+  "final_url": "https://kontur.ru/market",
+  "title": "Автоматизация малого и среднего бизнеса — управление бизнесом через сервис",
+  "fetched_at": "2026-04-25T20:25:14.266Z",
+  "size_bytes": 206131,
+  "http_errors": [
+    {
+      "url": "https://kontur.ru/Files/userfiles/image/products/market/mark-kassa.png",
+      "status": 403
+    },
+    {
+      "url": "https://ssp.bidvol.com/usersync?id=5TK2vXglMFo.AikABlGdxlEOcQ&dspcsid=142",
+      "status": 404
+    },
+    {
+      "url": "https://ssp.bidvol.com/usersync?pubid=1644",
+      "status": 404
+    },
+    {
+      "url": "https://api.kontur.ru/csi/support/v1/users/current/features?integrationId=market",
+      "status": 401
+    }
+  ]
+}
