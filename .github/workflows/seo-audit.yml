@@ -1,0 +1,59 @@
+name: Yandex SEO Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL сайта для аудита (https://example.ru)'
+        required: true
+      label:
+        description: 'Метка отчёта (необязательно)'
+        required: false
+        default: ''
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: seo-audit/playwright/package.json
+
+      - name: Install dependencies
+        working-directory: seo-audit/playwright
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: seo-audit/playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Run SEO audit
+        working-directory: seo-audit/playwright
+        run: node crawler.js "${{ github.event.inputs.url }}"
+        env:
+          AUDIT_LABEL: ${{ github.event.inputs.label }}
+
+      - name: Save report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-report-${{ github.run_id }}
+          path: seo-audit/playwright/seo-report-*.json
+          retention-days: 30
+
+      - name: Commit report to reports/
+        run: |
+          LABEL="${{ github.event.inputs.label }}"
+          SLUG=$(echo "${{ github.event.inputs.url }}" | sed 's|https\?://||;s|[^a-zA-Z0-9._-]|_|g')
+          DEST="seo-audit/reports/${SLUG}-$(date +%Y%m%d-%H%M%S).json"
+          cp seo-audit/playwright/seo-report-*.json "$DEST"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git commit -m "audit: $SLUG $(date +%Y-%m-%d)" || echo "Nothing to commit"
+          git push
