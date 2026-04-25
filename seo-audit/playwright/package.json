@@ -1,0 +1,12 @@
+{
+  "name": "seo-audit-crawler",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "crawl": "node crawler.js",
+    "audit": "node audit.js"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}

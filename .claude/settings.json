@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "claude-seo": {
+      "command": "npx",
+      "args": ["-y", "github:AgriciDaniel/claude-seo"],
+      "env": {}
+    },
+    "geo-seo-claude": {
+      "command": "npx",
+      "args": ["-y", "github:zubair-trabzada/geo-seo-claude"],
+      "env": {}
+    }
+  }
+}
