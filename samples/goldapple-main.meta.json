@@ -2,12 +2,9 @@
   "url": "https://goldapple.ru",
   "final_url": "https://goldapple.ru/",
   "title": "Gold Apple — checking device",
-  "fetched_at": "2026-04-25T21:32:51.115Z",
-  "size_bytes": 18433,
-  "http_errors": [
-    {
-      "url": "https://goldapple.ru/web/api/v1/settings",
-      "status": 403
-    }
-  ]
+  "fetched_at": "2026-04-25T21:40:06.548Z",
+  "size_bytes": 18434,
+  "http_errors": [],
+  "fetch_mode": "yandexbot",
+  "challenge_detected": true
 }
