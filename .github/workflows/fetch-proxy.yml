@@ -1,0 +1,94 @@
+name: Fetch Proxy
+
+on:
+  push:
+    paths:
+      - 'pending-fetches/*.json'
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Process pending fetches
+        run: |
+          set -euo pipefail
+          mkdir -p samples
+
+          for FILE in pending-fetches/*.json; do
+            [ -f "$FILE" ] || continue
+
+            ID=$(python3 -c "import json; d=json.load(open('$FILE')); print(d['id'])")
+            URL=$(python3 -c "import json; d=json.load(open('$FILE')); print(d['url'])")
+            USE_PW=$(python3 -c "import json; d=json.load(open('$FILE')); print(d.get('playwright', False))")
+
+            echo "→ Fetching $URL (id=$ID playwright=$USE_PW)"
+
+            if [ "$USE_PW" = "True" ]; then
+              npm install -g playwright@latest 2>/dev/null || true
+              npx playwright install chromium --with-deps 2>/dev/null || true
+
+              node - <<'JSEOF' "$URL" "samples/${ID}.html"
+const { chromium } = require('playwright');
+const fs = require('fs');
+const [,, url, out] = process.argv;
+(async () => {
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
+    locale: 'ru-RU',
+  });
+  const page = await ctx.newPage();
+  await page.goto(url, { waitUntil: 'networkidle', timeout: 25000 });
+  const html = await page.content();
+  fs.writeFileSync(out, html);
+  const title = await page.title();
+  console.log('title:', title);
+  await browser.close();
+})();
+JSEOF
+
+            else
+              curl -sL \
+                -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36" \
+                -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
+                -H "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8" \
+                --compressed --max-time 25 \
+                -o "samples/${ID}.html" \
+                "$URL" || echo "curl failed for $URL"
+            fi
+
+            # Write fetch metadata
+            python3 -c "
+import json, os
+d = json.load(open('$FILE'))
+d['fetched_at'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+d['size_bytes'] = os.path.getsize('samples/${ID}.html') if os.path.exists('samples/${ID}.html') else 0
+with open('samples/${ID}.meta.json', 'w') as f:
+    json.dump(d, f, indent=2)
+"
+            rm -f "$FILE"
+            echo "✓ Done → samples/${ID}.html"
+          done
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add samples/ pending-fetches/
+          git diff --staged --quiet && echo "nothing to commit" && exit 0
+          git commit -m "fetch-proxy: results $(date +%Y-%m-%d\ %H:%M)"
+          git push origin ${{ github.ref_name }}
