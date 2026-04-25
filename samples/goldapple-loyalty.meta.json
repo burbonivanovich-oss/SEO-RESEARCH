@@ -1,0 +1,13 @@
+{
+  "url": "https://goldapple.ru/loyalty",
+  "final_url": "https://goldapple.ru/loyalty",
+  "title": "Gold Apple — checking device",
+  "fetched_at": "2026-04-25T21:32:47.442Z",
+  "size_bytes": 18433,
+  "http_errors": [
+    {
+      "url": "https://goldapple.ru/web/api/v1/settings",
+      "status": 403
+    }
+  ]
+}
