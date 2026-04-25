@@ -1,0 +1,21 @@
+{
+  "url": "https://kontur.ru/market/kkt",
+  "final_url": "https://kontur.ru/market/kkt",
+  "title": "Купить онлайн‑кассу для ИП | Стоимость от 18600 руб — Контур.Маркет",
+  "fetched_at": "2026-04-25T20:45:37.178Z",
+  "size_bytes": 269755,
+  "http_errors": [
+    {
+      "url": "https://ssp.bidvol.com/usersync?id=BOiqk7JbRI.AikABlGdxmPz0A&dspcsid=142",
+      "status": 404
+    },
+    {
+      "url": "https://sentry.kontur.host/api/1164/envelope/?sentry_key=6195a56afcb34ad7b0a8f856c41cbd94&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.113.0",
+      "status": 429
+    },
+    {
+      "url": "https://api.kontur.ru/csi/support/v1/users/current/features?integrationId=market",
+      "status": 401
+    }
+  ]
+}

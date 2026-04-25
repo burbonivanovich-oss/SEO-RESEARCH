@@ -1,0 +1,21 @@
+{
+  "url": "https://kontur.ru/market/gossistemy",
+  "final_url": "https://kontur.ru/market/gossistemy",
+  "title": "ЕГАИС, маркировка и «Меркурий» в одном окне — Контур.Маркет",
+  "fetched_at": "2026-04-25T20:45:28.241Z",
+  "size_bytes": 246823,
+  "http_errors": [
+    {
+      "url": "https://ssp.bidvol.com/usersync?id=sLxjOFy5BF.AikABlGdxmORlw&dspcsid=142",
+      "status": 404
+    },
+    {
+      "url": "https://api.kontur.ru/csi/support/v1/users/current/features?integrationId=market",
+      "status": 401
+    },
+    {
+      "url": "https://sentry.kontur.host/api/1164/envelope/?sentry_key=6195a56afcb34ad7b0a8f856c41cbd94&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.113.0",
+      "status": 429
+    }
+  ]
+}
