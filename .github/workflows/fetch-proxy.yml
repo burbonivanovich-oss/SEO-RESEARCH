@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       id:
-        description: 'Fetch ID (без .json)'
+        description: 'Fetch ID'
         required: true
       url:
-        description: 'URL для фетча'
+        description: 'URL'
         required: true
 
 permissions:
@@ -35,104 +35,42 @@ jobs:
           node-version: '20'
 
       - name: Install Playwright
+        working-directory: seo-audit/playwright
         run: |
-          npm install playwright@latest
+          npm install
           npx playwright install chromium --with-deps
 
-      - name: Write Playwright fetcher
-        run: |
-          cat > /tmp/fetcher.mjs << 'JSEOF'
-          import { chromium } from 'playwright';
-          import fs from 'fs';
-
-          const [,, url, outHtml, outMeta] = process.argv;
-
-          const browser = await chromium.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-          });
-          const ctx = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            locale: 'ru-RU',
-            extraHTTPHeaders: {
-              'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
-            },
-          });
-
-          const page = await ctx.newPage();
-
-          const responses = [];
-          page.on('response', r => responses.push({ url: r.url(), status: r.status() }));
-
-          let finalStatus = null;
-          page.on('response', r => { if (r.url() === url || r.request().isNavigationRequest()) finalStatus = r.status(); });
-
-          try {
-            await page.goto(url, { waitUntil: 'networkidle', timeout: 25000 });
-          } catch (e) {
-            console.error('goto error:', e.message);
-          }
-
-          const html = await page.content();
-          const title = await page.title();
-          const finalUrl = page.url();
-
-          fs.writeFileSync(outHtml, html);
-
-          const meta = {
-            url,
-            final_url: finalUrl,
-            title,
-            fetched_at: new Date().toISOString(),
-            size_bytes: Buffer.byteLength(html, 'utf8'),
-            http_errors: responses.filter(r => r.status >= 400).slice(0, 20),
-          };
-          fs.writeFileSync(outMeta, JSON.stringify(meta, null, 2));
-
-          console.log('title:', title);
-          console.log('size:', meta.size_bytes, 'bytes');
-          console.log('final_url:', finalUrl);
-
-          await browser.close();
-          JSEOF
-
       - name: Process pending fetches
+        working-directory: seo-audit/playwright
         run: |
           set -euo pipefail
-          mkdir -p samples
+          mkdir -p ../../samples
 
-          # Handle workflow_dispatch input
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             ID="${{ github.event.inputs.id }}"
             URL="${{ github.event.inputs.url }}"
-            echo "{\"id\":\"$ID\",\"url\":\"$URL\"}" > "pending-fetches/${ID}.json"
+            echo "{\"id\":\"$ID\",\"url\":\"$URL\"}" > "../../pending-fetches/${ID}.json"
           fi
 
           PROCESSED=0
-          for FILE in pending-fetches/*.json; do
+          for FILE in ../../pending-fetches/*.json; do
             [ -f "$FILE" ] || continue
-
             ID=$(python3 -c "import json; print(json.load(open('$FILE'))['id'])")
             URL=$(python3 -c "import json; print(json.load(open('$FILE'))['url'])")
-
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "→ Fetching: $URL"
-            echo "   ID: $ID"
-
-            node /tmp/fetcher.mjs "$URL" "samples/${ID}.html" "samples/${ID}.meta.json" \
-              && echo "✓ Saved samples/${ID}.html" \
-              || echo "⚠ Playwright fetch failed for $URL"
-
+            echo "Fetching: $URL (id=$ID)"
+            node proxy-fetch.cjs "$URL" "../../samples/${ID}.html" "../../samples/${ID}.meta.json"
             rm -f "$FILE"
-            PROCESSED=$((PROCESSED + 1))
+            echo "Saved: samples/${ID}.html"
+            PROCESSED=$((PROCESSED+1))
           done
+          echo "Total processed: $PROCESSED"
 
-          echo "Processed: $PROCESSED fetch request(s)"
-
-      - name: Commit results back
+      - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add samples/ pending-fetches/
           git diff --staged --quiet && { echo "Nothing to commit"; exit 0; }
-          git commit -m "fetch-proxy: $(ls samples/*.html 2>/dev/null | xargs -I{} basename {} .html | tr '\n' ' ') $(date +%H:%M)"
+          FILES=$(git diff --staged --name-only | grep 'samples/' | xargs -I{} basename {} | tr '\n' ' ')
+          git commit -m "fetch-proxy: ${FILES}$(date +%H:%M)"
           git push origin ${{ github.ref_name }}
